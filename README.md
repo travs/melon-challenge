@@ -12,9 +12,9 @@ A smart-contract that:
 
 - enforces a **timed buying period**, during which tokens can be *prebought* in any amount
 - allows *withdrawal* from the contract during this buying period (or even partial withdrawal; i.e. order reduction)
-- ensures that large buyers get as many MLN as possible, but *all* buyers get some MLN (See: Distribution Algorithm)
+- ensures that large buyers get as many MLN as possible, but *all* buyers get some MLN (See: [Distribution Algorithm](#distribution-algorithm))
 - refunds any unfulfilled orders fully
-- allows buyers to order pseudonymously, so that others cannot see that they ordered (See: [TODO](#TODO))
+- allows buyers to order pseudonymously, so that others cannot see that they ordered (See: [TODO](#todo))
 
 ### Distribution Algorithm
 
