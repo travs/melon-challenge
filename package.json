@@ -1,0 +1,34 @@
+{
+  "name": "melon-challenge",
+  "version": "0.0.1",
+  "description": "An equitable, timed, fund-and-release offering",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "web3": "^0.18.4"
+  },
+  "devDependencies": {
+    "ethereumjs-testrpc": "^3.0.3"
+  },
+  "scripts": {
+    "test": "truffle test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/travs/melon-challenge.git"
+  },
+  "keywords": [
+    "melon",
+    "protocol",
+    "ethereum",
+    "crowdsale"
+  ],
+  "author": "Travis Jacobs",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/travs/melon-challenge/issues"
+  },
+  "homepage": "https://github.com/travs/melon-challenge#readme"
+}
