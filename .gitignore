@@ -3,3 +3,5 @@ contracts/ConvertLib.sol
 contracts/MetaCoin.sol
 test/TestMetacoin.sol
 test/metacoin.js
+node_modules/
+build/
