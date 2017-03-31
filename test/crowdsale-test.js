@@ -1,6 +1,9 @@
 const Web3 = require("web3");
+const rpc = require("../utils/rpc.js");
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
+
+//rpc.increaseTime(2);
 
 var address_1 = web3.eth.accounts[3];
 var address_2 = web3.eth.accounts[4];
