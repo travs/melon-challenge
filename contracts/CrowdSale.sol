@@ -56,9 +56,8 @@ contract CrowdSale {
     // Call this function with the amount user want's refunded to their address.
     // ETH (amt) withdrawn to user's address, and their order is updated.
     uint numTokens = amt / tokenPrice;
-    if (msg.sender.send(amt)) {
-      unfulfilledOrders[msg.sender] -= numTokens;
-    }
+    unfulfilledOrders[msg.sender] -= numTokens;
+    if (!msg.sender.send(amt)) throw;
   }
 
   // BUSINESS LOGIC
@@ -110,9 +109,8 @@ contract CrowdSale {
     uint amtToRefund = 0;
     for (i=0; i < buyers.length; i++) {
       amtToRefund = unfulfilledOrders[buyers[i]] * tokenPrice;
-      if (buyers[i].send(amtToRefund)) {
-        unfulfilledOrders[buyers[i]] = 0; // successfully refunded
-      }
+      unfulfilledOrders[buyers[i]] = 0; // refunded
+      if (!buyers[i].send(amtToRefund)) throw;
     }
 
     state = State.Closed;
