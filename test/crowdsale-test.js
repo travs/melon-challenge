@@ -1,12 +1,13 @@
 const Web3 = require("web3");
-const rpc = require("../utils/rpc.js");
+const rpc = require("../utils/rpc-helper.js");
+const extensions = require("../utils/test-extensions.js");
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
 //rpc.increaseTime(2);
 
-var address_1 = web3.eth.accounts[3];
-var address_2 = web3.eth.accounts[4];
+var address_1 = web3.eth.accounts[1];
+var address_2 = web3.eth.accounts[2];
 
 var CrowdSale = artifacts.require("./CrowdSale.sol");
 
@@ -14,36 +15,67 @@ contract('CrowdSale', function(accounts) {
   it("should accept a prebuy order", function() {
     // checks that Eth can be received at contract address,
     // and proper number of tokens are preordered for buyer
-    sentWei = web3.toWei(2, 'ether');
-    return CrowdSale.deployed().then(function(instance) {
-      return instance.prebuyTokens({value: sentWei, from: address_1});
-    }).then(function(result) {
-      CrowdSale.deployed().then(function(instance){ // get the instance again
+    var sentWei = web3.toWei(2, 'ether');
+    return CrowdSale.deployed()
+      .then(function(instance) {
+        return instance.prebuyTokens({value: sentWei, from: address_1});
+      })
+      .then(function(){
+        return CrowdSale.deployed(); // get our contract instance again
+      })
+      .then(function(instance) {
         assert.equal(web3.eth.getBalance(instance.address).toNumber(),
           sentWei, "Correct Ether not in contract's address.");
-        return instance.checkTokenOrder.call(address_1);
-      }).then(function(orderAmt){
-        assert.equal(orderAmt, 4, "Incorrect number of tokens on order");
+        return instance.checkTokenOrder.call(address_1); // returns a value
+      })
+      .then(function(orderAmt){
+          assert.equal(orderAmt, 4, "Incorrect number of tokens on order");
       });
-    });
   });
   it("should allow withdrawal from contract", function() {
     // checks that requested Eth is removed from contract address,
     // and proper number of tokens for address are also removed
-    wdrawnWei = web3.toWei(1, 'ether');
-    return CrowdSale.deployed().then(function(instance) {
-      return instance.withdrawFunding(wdrawnWei, {from: address_1})
+    var wdrawnWei = web3.toWei(1, 'ether');
+    return CrowdSale.deployed()
+      .then(function(instance) {
+        return instance.withdrawFunding(wdrawnWei, {from: address_1});
+      })
       .then(function(result){
-        var txPrice = result.receipt.gasUsed * web3.eth.gasPrice;
-        var returned_amount = wdrawnWei - txPrice;
-        assert.equal(web3.eth.getBalance(instance.address).toNumber(),
-          web3.toWei(1, 'ether'), "Incorrect Ether left at contract address");
+        //var txPrice = result.receipt.gasUsed * web3.eth.gasPrice;
+        //var returned_amount = wdrawnWei - txPrice;
         // assert.equal(web3.eth.getBalance(address_1).toNumber(), // why is the subtraction not working out? some hidden cost...
         //   returned_amount, "Incorrect Ether amount withdrawn");
+        return CrowdSale.deployed();
+      })
+      .then(function(instance){
+        assert.equal(web3.eth.getBalance(instance.address).toNumber(),
+          web3.toWei(1, 'ether'), "Incorrect Ether left at contract address");
         return instance.checkTokenOrder.call(address_1);
-      }).then(function(orderAmt){
+      })
+      .then(function(orderAmt){
         assert.equal(orderAmt, 2, "Incorrect tokens on order after withdrawal");
       });
-    });
+  });
+  it("should reject orders below the lower limit", function () {
+    // checks that a buyer cannot purchase below the lower funding limit
+    var underLimitWei = web3.toWei(0.9999999, 'ether');  // limit is 1 Ether
+    return CrowdSale.deployed()
+      .then(function(instance) {
+        extensions.assertThrows(instance.prebuyTokens,
+          [{value: underLimitWei, from: address_2}],
+          "No error thrown, or incorrect error thrown.");
+      })
+      .then(function(){
+        return CrowdSale.deployed();  // get the contract instance
+      })
+      .then(function(instance){
+        return instance.checkTokenOrder.call(address_2, {from: address_2});  //returns a value
+      })
+      .then(function(orderAmt){
+        assert.equal(orderAmt, 0, "Order under limit was erroneously accepted");
+      })
+  });
+  it("should ", function () {
+    // checks that
   });
 });

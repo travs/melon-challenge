@@ -95,10 +95,19 @@ At the end of the distribution, everyone has gotten their order filled except th
 ### TODO
 
 - [ ] Make a minimal frontend
-- [ ] Cover everything with tests
 - [ ] Make orders/withdrawals pseudonymous/encrypted
 - [ ] Discuss advantages/disadvantages of this algorithm
   - (how is it more equal, transparent and trustless than another solution?)
 - [ ] Add fallback function
+- [ ] Discuss how we can decide where to place the minimum tx value (data-driven approach)
+- [ ] Cover everything with tests
+  - [x] Test accept prebuy order
+  - [x] Test allow withdrawal
+  - [x] Test reject order below minimum
+  - [ ] Test reject withdrawal below minimum
+  - [ ] Test someone can't see another's orders
+  - [ ] Test early payout call does not trigger sale end
+  - [ ] Simulate a crowdsale
 - [x] Add ability to time travel in testRPC
-- [ ] Implement timed transitions pattern in contract
+- [x] Implement timed transitions pattern in contract
+- [x] Add lower bound to order size to prevent spamming of the blockchain with tiny orders (suggestion by @retotrinkler)
