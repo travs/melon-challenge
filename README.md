@@ -105,7 +105,8 @@ At the end of the distribution, everyone has gotten their order filled except th
   - [x] Test allow withdrawal
   - [x] Test reject order below minimum
   - [x] Test reject withdrawal below minimum
-  - [ ] Test someone can't see another's orders
+  - [x] Test someone can't see another's orders
+  - [x] Test someone can see their own orders
   - [ ] Test early payout call does not trigger sale end
   - [ ] Simulate a crowdsale
 - [x] Add ability to time travel in testRPC

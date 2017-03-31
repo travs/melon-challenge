@@ -4,8 +4,7 @@ const extensions = require("../utils/test-extensions.js");
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
-//rpc.increaseTime(2);
-
+var deployer = web3.eth.accounts[0];
 var address_1 = web3.eth.accounts[1];
 var address_2 = web3.eth.accounts[2];
 
@@ -69,7 +68,7 @@ contract('CrowdSale', function(accounts) {
         return CrowdSale.deployed();  // get the contract instance
       })
       .then(function(instance){
-        return instance.checkTokenOrder.call(address_2, {from: address_2});  //returns a value
+        return instance.checkTokenOrder.call(address_2, {from: address_2});
       })
       .then(function(orderAmt){
         assert.equal(orderAmt, 0, "Order under limit was erroneously accepted");
@@ -84,4 +83,22 @@ contract('CrowdSale', function(accounts) {
           "No error thrown, or incorrect error thrown.");
       })
   });
+  it("should reject someone looking for another person's orders", function(){
+    return CrowdSale.deployed()
+      .then(function(instance) {
+        extensions.assertThrows(instance.checkTokenOrder.call,
+          [address_1, {from: address_2}], "No/incorrect error thrown");
+      })
+  });
+  it("should allow someone to look at their own order", function(){
+    return CrowdSale.deployed()
+      .then(function(instance) {
+        assert.doesNotThrow(function(){
+          return instance.checkTokenOrder.call(address_1, {from: address_1});
+        })
+      })
+  });
+  it("should not allow a payout call before sale ends");
+  it("should allow a payout call after time limit");
+  //rpc.increaseTime(2);
 });

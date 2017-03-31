@@ -66,10 +66,10 @@ contract CrowdSale {
     if(!msg.sender.send(amt)) throw;
   }
 
-  function checkTokenOrder (address addr) public timedTransition returns (uint tokensBought){
+  function checkTokenOrder (address addr) public timedTransition returns (uint){
     // get the number of tokens currently on order for an address.
     // users can only check their own balance, but admin can check anyone's.
-    if(msg.sender == addr || msg.sender == admin)
+    if(msg.sender != addr && msg.sender != admin) throw;
     return unfulfilledOrders[addr];
   }
 

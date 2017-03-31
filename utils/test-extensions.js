@@ -3,7 +3,7 @@ function assertThrows (fn, args, msg) {
   /*
   Asserts that `fn(args)` will throw an `invalid JUMP` error.
   Errors with message `msg` otherwise.
-  This is necessary since this error is not normally caught with Chai.
+  This is necessary since this error is not caught (see https://goo.gl/WTYb4k).
   */
   fn.apply(this, args)
     .then(function(){
