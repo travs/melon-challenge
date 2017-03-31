@@ -75,7 +75,13 @@ contract('CrowdSale', function(accounts) {
         assert.equal(orderAmt, 0, "Order under limit was erroneously accepted");
       })
   });
-  it("should ", function () {
-    // checks that
+  it("should reject withdrawal below set minimum", function () {
+    // checks that buyer cannot withdraw below a certain amount
+    return CrowdSale.deployed()
+      .then(function(instance) {
+        extensions.assertThrows(instance.withdrawFunding,
+          [{value: 0.9999999, from: address_1}],
+          "No error thrown, or incorrect error thrown.");
+      })
   });
 });

@@ -104,7 +104,7 @@ At the end of the distribution, everyone has gotten their order filled except th
   - [x] Test accept prebuy order
   - [x] Test allow withdrawal
   - [x] Test reject order below minimum
-  - [ ] Test reject withdrawal below minimum
+  - [x] Test reject withdrawal below minimum
   - [ ] Test someone can't see another's orders
   - [ ] Test early payout call does not trigger sale end
   - [ ] Simulate a crowdsale
