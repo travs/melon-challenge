@@ -1,6 +1,7 @@
 const Web3 = require("web3");
 const rpc = require("../utils/rpc-helper.js");
 const extensions = require("../utils/test-extensions.js");
+const logging = require("../utils/contract-logger.js");
 const CrowdSale = artifacts.require("./CrowdSale.sol");
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
@@ -11,13 +12,7 @@ var address_1 = web3.eth.accounts[1];
 var address_2 = web3.eth.accounts[2];
 
 // EVENT LOGGING
-// CrowdSale.deployed()
-//   .then(function(instance){
-//     var event = instance.LogPrebuy(function(error, result) {
-//       if (!error)
-//           console.log(result);
-//     });
-//   })
+logging.logContract(CrowdSale);
 
 // TESTS
 contract('CrowdSale', function(accounts) {

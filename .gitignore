@@ -5,3 +5,4 @@ test/TestMetacoin.sol
 test/metacoin.js
 node_modules/
 build/
+logs/
