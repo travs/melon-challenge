@@ -23,6 +23,12 @@ contract CrowdSale {
   // STATE VARIABLES
   State public state;
 
+  // EVENTS
+  event LogPrebuy(address _from, uint _numWei, uint _numTokens);
+  event LogWithdrawal(address _addr, uint _numWei, uint _numTokens);
+  event LogPayout(address _to, uint _numTokens);
+  event LogQuotaUpdate(uint _q);
+
   // MODIFIERS
   modifier onlyAdmin () {
     if(msg.sender != admin) throw;
@@ -35,7 +41,7 @@ contract CrowdSale {
   }
 
   modifier timedTransition () {
-    if(state == State.Open && now > saleEnd)
+    if(now > saleEnd)
       state = State.Payout;
     _;
   }
@@ -55,6 +61,7 @@ contract CrowdSale {
     uint numPreboughtTokens = msg.value / tokenPrice; // division is truncated
     unfulfilledOrders[msg.sender] += numPreboughtTokens;
     buyers.push(msg.sender);
+    LogPrebuy(msg.sender, msg.value, numPreboughtTokens);
   }
 
   function withdrawFunding (uint amt) public timedTransition inState(State.Open) {
@@ -74,25 +81,29 @@ contract CrowdSale {
   }
 
   //BUSINESS LOGIC
-  function payOut () public inState(State.Payout) onlyAdmin {
+  function payOut () public timedTransition inState(State.Payout) onlyAdmin {
     // begin multi-stage equitable payouts
     uint remainingTokens = totalTokenSupply; // undistributed tokens
     pruneOrders(); // remove buyers that decided to completely refund
 
     uint quota = totalTokenSupply / buyers.length;
+    LogQuotaUpdate(quota);
     while (quota > 0) {
       for (uint i=0; i < buyers.length; i++) {
         if(unfulfilledOrders[buyers[i]] > quota) { // order is above quota
           tokensOwned[buyers[i]] += quota;
+          remainingTokens -= quota; // subtract from remaining tokens
           unfulfilledOrders[buyers[i]] -= quota;
         }
         else { // order is below or equal to quota
           tokensOwned[buyers[i]] += unfulfilledOrders[buyers[i]];
+          remainingTokens -= tokensOwned[buyers[i]]; // subtract from remaining tokens
           unfulfilledOrders[buyers[i]] = 0;
         }
       }
       pruneOrders();  // remove buyers from list if their order is filled
       quota = remainingTokens / buyers.length;
+      LogQuotaUpdate(quota);
     }
 
     // refund orders still unfulfilled at the end of payout (if any)
@@ -102,7 +113,6 @@ contract CrowdSale {
       unfulfilledOrders[buyers[i]] = 0; // refunded
       if(!buyers[i].send(amtToRefund)) throw;
     }
-
     state = State.Closed;
   }
 
