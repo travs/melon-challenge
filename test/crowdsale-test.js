@@ -1,15 +1,25 @@
 const Web3 = require("web3");
 const rpc = require("../utils/rpc-helper.js");
 const extensions = require("../utils/test-extensions.js");
+const CrowdSale = artifacts.require("./CrowdSale.sol");
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
+// TEST PARAMETERS
 var deployer = web3.eth.accounts[0];
 var address_1 = web3.eth.accounts[1];
 var address_2 = web3.eth.accounts[2];
 
-var CrowdSale = artifacts.require("./CrowdSale.sol");
+// EVENT LOGGING
+// CrowdSale.deployed()
+//   .then(function(instance){
+//     var event = instance.LogPrebuy(function(error, result) {
+//       if (!error)
+//           console.log(result);
+//     });
+//   })
 
+// TESTS
 contract('CrowdSale', function(accounts) {
   it("should accept a prebuy order", function() {
     // checks that Eth can be received at contract address,
@@ -98,7 +108,39 @@ contract('CrowdSale', function(accounts) {
         })
       })
   });
-  it("should not allow a payout call before sale ends");
-  it("should allow a payout call after time limit");
-  //rpc.increaseTime(2);
+  it("should not allow a payout call before sale ends", function(){
+    return CrowdSale.deployed()
+      .then(function(instance) {
+        return extensions.assertThrows(instance.payOut.call,
+          [], "No/incorrect error thrown");
+      })
+      .then(function(){
+        return CrowdSale.deployed();
+      })
+      .then(function(instance){
+        return instance.state.call();
+      })
+      .then(function(result){
+        assert(result == 0, "We are not in the first stage when we should be.");
+      })
+  })
+  it.skip("should allow a payout call after time limit", function(){
+    return CrowdSale.deployed()
+      .then(function(instance){
+        var timeAdvance = 25 * 60 * 60; // 25 hrs
+        rpc.increaseTime(timeAdvance); //fast-forward with next block
+        rpc.mineBlock();  // advance to next block
+        return instance.checkTokenOrder.call(address_1); // ping contract to advance its state
+      })
+      .then(function(){
+        return CrowdSale.deployed();
+      })
+      .then(function(instance){
+        return instance.payOut.call({gas: 4000000});
+      })
+      // .then(function(res){
+      //   console.log(res.toString());
+      //   console.log(web3.eth.getBlock('latest'));
+      // })
+  });
 });
