@@ -1,4 +1,8 @@
 // send async method calls to the testRPC
+var Web3 = require('web3');
+var web3 = new Web3();
+web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
+
 // BEGIN CODE BLOCK (from @mpolci https://git.io/vSc4y)
 function rpc(method, arg) {
   var req = {
@@ -24,6 +28,11 @@ function increaseTime(seconds){
   rpc('evm_increaseTime', [seconds]);
 }
 
+function mineBlock(){
+  rpc('evm_mine');
+}
+
 module.exports = {
-  increaseTime
+  increaseTime,
+  mineBlock
 }

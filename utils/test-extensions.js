@@ -5,13 +5,17 @@ function assertThrows (fn, args, msg) {
   Errors with message `msg` otherwise.
   This is necessary since this error is not caught (see https://goo.gl/WTYb4k).
   */
-  fn.apply(this, args)
+  return new Promise(function(resolve, reject){
+    fn.apply(this, args)
     .then(function(){
       assert(false, msg);
+      resolve();
     },
     function(error){
       assert.include(error.toString(), "invalid JUMP", msg);
+      resolve();
     })
+  })
 }
 
 module.exports = {
