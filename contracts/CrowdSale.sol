@@ -12,7 +12,8 @@ contract CrowdSale {
   uint constant minTransaction = 1 ether; // minimum prebuy or withdrawal
   mapping (address => uint) private unfulfilledOrders; // MLN ordered by address
   mapping (address => uint) private tokensOwned;  // MLN owned by address
-  address[] buyers;                       // list of buyers' addresses
+  address[] public buyers;                       // list of buyers' addresses
+  address[] finalBuyers;
 
   enum State {
     Open,
@@ -28,7 +29,7 @@ contract CrowdSale {
   event LogWithdrawal(address _addr, uint _numWei, uint _numTokens);
   event LogPayout(address _to, uint _numTokens);
   event LogQuotaUpdate(uint _q);
-  event LogArbitrary(string _s);
+  event LogDebug(uint _a);
 
   // MODIFIERS
   modifier onlyAdmin () {
@@ -85,32 +86,32 @@ contract CrowdSale {
   //BUSINESS LOGIC
   function payOut () public timedTransition inState(State.Payout) onlyAdmin {
     // begin multi-stage equitable payouts
-    LogQuotaUpdate(123456);
-    LogWithdrawal(msg.sender, 1, 1);
-
     uint remainingTokens = totalTokenSupply; // undistributed tokens
-    pruneOrders(); // remove buyers that decided to completely refund
-    return;
+    address[] remBuyers = pruneOrders(); // remove buyers that decided to completely refund
 
     uint quota = totalTokenSupply / buyers.length;
     LogQuotaUpdate(quota);
-    while (quota > 0) { // TODO: this can be refactored a bit
-      for (uint i=0; i < buyers.length; i++) {
-        if(unfulfilledOrders[buyers[i]] > quota) { // order is above quota
-          tokensOwned[buyers[i]] += quota;
+    LogDebug(remBuyers.length);
+
+    while (remBuyers.length > 0) { // TODO: this can be refactored a bit*/
+      for (uint i=0; i < remBuyers.length; i++) {
+        if(unfulfilledOrders[remBuyers[i]] > quota) { // order is above quota
+          tokensOwned[remBuyers[i]] += quota;
           remainingTokens -= quota; // subtract from remaining tokens
-          unfulfilledOrders[buyers[i]] -= quota;
+          unfulfilledOrders[remBuyers[i]] -= quota;
         }
         else { // order is below or equal to quota
-          tokensOwned[buyers[i]] += unfulfilledOrders[buyers[i]];
-          remainingTokens -= tokensOwned[buyers[i]]; // subtract from remaining tokens
-          unfulfilledOrders[buyers[i]] = 0;
-          LogPayout(buyers[i], tokensOwned[buyers[i]]); //logs when token attribution complete for each buyer
+          tokensOwned[remBuyers[i]] += unfulfilledOrders[remBuyers[i]];
+          remainingTokens -= tokensOwned[remBuyers[i]]; // subtract from remaining tokens
+          unfulfilledOrders[remBuyers[i]] = 0;
+          LogPayout(remBuyers[i], tokensOwned[remBuyers[i]]); //logs when token attribution complete for each buyer
         }
       }
-      pruneOrders();  // remove buyers from list if their order is filled
-      quota = remainingTokens / buyers.length;
-      LogQuotaUpdate(quota);
+      remBuyers = pruneOrders();  // remove buyers from list if their order is filled
+      if(remBuyers.length != 0) {
+        quota = remainingTokens / remBuyers.length;
+        LogQuotaUpdate(quota);
+      }
     }
 
     // refund orders still unfulfilled at the end of payout (if any)
@@ -124,16 +125,16 @@ contract CrowdSale {
   }
 
   // HELPER FUNCTIONS
-  function pruneOrders () private inState(State.Payout) {
-    // remove buyers with no unfulfilled order remaining
-    address[] finalBuyers;
-    for (uint i=0; i < buyers.length; i++){
+  function pruneOrders () private inState(State.Payout) returns(address[] storage) {
+    // remove buyers with no unfulfilled order remaining, and return the new array
+    delete finalBuyers; // empty array
+    uint numBuyers = buyers.length;
+    for (uint i=0; i < numBuyers; i++){
       if(unfulfilledOrders[buyers[i]] != 0){
         finalBuyers.push(buyers[i]);
       }
     }
-    LogArbitrary("here");
-    return;
-    buyers = finalBuyers;
+    LogDebug(finalBuyers.length);
+    return finalBuyers;
   }
 }

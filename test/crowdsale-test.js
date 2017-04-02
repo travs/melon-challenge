@@ -105,7 +105,7 @@ contract('CrowdSale', function(accounts) {
         })
       })
   });
-  it.skip("should not allow a payout call before sale ends", function(){
+  it("should not allow a payout call before sale ends", function(){
     return CrowdSale.deployed()
       .then(function(instance) {
         return extensions.assertThrows(instance.payOut.call,
@@ -133,11 +133,7 @@ contract('CrowdSale', function(accounts) {
         return CrowdSale.deployed();
       })
       .then(function(instance){
-        instance.payOut({gas: 4000000});
+        assert.doesNotThrow(instance.payOut);
       })
-      // .then(function(res){
-      //   console.log(res.toString());
-      //   console.log(web3.eth.getBlock('latest'));
-      // })
   });
 });
