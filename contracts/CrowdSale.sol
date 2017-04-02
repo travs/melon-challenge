@@ -28,6 +28,7 @@ contract CrowdSale {
   event LogWithdrawal(address _addr, uint _numWei, uint _numTokens);
   event LogPayout(address _to, uint _numTokens);
   event LogQuotaUpdate(uint _q);
+  event LogArbitrary(string _s);
 
   // MODIFIERS
   modifier onlyAdmin () {
@@ -71,6 +72,7 @@ contract CrowdSale {
     uint numTokens = amt / tokenPrice;
     unfulfilledOrders[msg.sender] -= numTokens;
     if(!msg.sender.send(amt)) throw;
+    LogWithdrawal(msg.sender, msg.value, numTokens);
   }
 
   function checkTokenOrder (address addr) public timedTransition returns (uint){
@@ -83,12 +85,16 @@ contract CrowdSale {
   //BUSINESS LOGIC
   function payOut () public timedTransition inState(State.Payout) onlyAdmin {
     // begin multi-stage equitable payouts
+    LogQuotaUpdate(123456);
+    LogWithdrawal(msg.sender, 1, 1);
+
     uint remainingTokens = totalTokenSupply; // undistributed tokens
     pruneOrders(); // remove buyers that decided to completely refund
+    return;
 
     uint quota = totalTokenSupply / buyers.length;
     LogQuotaUpdate(quota);
-    while (quota > 0) {
+    while (quota > 0) { // TODO: this can be refactored a bit
       for (uint i=0; i < buyers.length; i++) {
         if(unfulfilledOrders[buyers[i]] > quota) { // order is above quota
           tokensOwned[buyers[i]] += quota;
@@ -99,6 +105,7 @@ contract CrowdSale {
           tokensOwned[buyers[i]] += unfulfilledOrders[buyers[i]];
           remainingTokens -= tokensOwned[buyers[i]]; // subtract from remaining tokens
           unfulfilledOrders[buyers[i]] = 0;
+          LogPayout(buyers[i], tokensOwned[buyers[i]]); //logs when token attribution complete for each buyer
         }
       }
       pruneOrders();  // remove buyers from list if their order is filled
@@ -118,13 +125,15 @@ contract CrowdSale {
 
   // HELPER FUNCTIONS
   function pruneOrders () private inState(State.Payout) {
-    // remove buyers with no unfilfilled order remaining
+    // remove buyers with no unfulfilled order remaining
     address[] finalBuyers;
     for (uint i=0; i < buyers.length; i++){
       if(unfulfilledOrders[buyers[i]] != 0){
         finalBuyers.push(buyers[i]);
       }
     }
+    LogArbitrary("here");
+    return;
     buyers = finalBuyers;
   }
 }

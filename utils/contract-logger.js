@@ -18,7 +18,7 @@ function logContract(contract){
     .then(function(instance){
       instance.allEvents({}, function(error, result) {
         if (!error){ // we can make this a lot more pretty if we have time
-          logger.info(result.args);
+          logger.info('%s %s', result.event, JSON.stringify(result.args));
         } else {
           logger.error(error);
         }

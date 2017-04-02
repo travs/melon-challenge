@@ -1,4 +1,5 @@
 const Web3 = require("web3");
+const TestRPC = require("ethereumjs-testrpc");
 const rpc = require("../utils/rpc-helper.js");
 const extensions = require("../utils/test-extensions.js");
 const logging = require("../utils/contract-logger.js");
@@ -81,10 +82,11 @@ contract('CrowdSale', function(accounts) {
   });
   it("should reject withdrawal below set minimum", function () {
     // checks that buyer cannot withdraw below a certain amount
+    underLimitWei = web3.toWei(0.99999, 'ether');
     return CrowdSale.deployed()
       .then(function(instance) {
         extensions.assertThrows(instance.withdrawFunding,
-          [{value: 0.9999999, from: address_1}],
+        [underLimitWei, {from: address_1}],
           "No error thrown, or incorrect error thrown.");
       })
   });
@@ -103,7 +105,7 @@ contract('CrowdSale', function(accounts) {
         })
       })
   });
-  it("should not allow a payout call before sale ends", function(){
+  it.skip("should not allow a payout call before sale ends", function(){
     return CrowdSale.deployed()
       .then(function(instance) {
         return extensions.assertThrows(instance.payOut.call,
@@ -119,7 +121,7 @@ contract('CrowdSale', function(accounts) {
         assert(result == 0, "We are not in the first stage when we should be.");
       })
   })
-  it.skip("should allow a payout call after time limit", function(){
+  it("should allow a payout call after time limit", function(){
     return CrowdSale.deployed()
       .then(function(instance){
         var timeAdvance = 25 * 60 * 60; // 25 hrs
@@ -131,7 +133,7 @@ contract('CrowdSale', function(accounts) {
         return CrowdSale.deployed();
       })
       .then(function(instance){
-        return instance.payOut.call({gas: 4000000});
+        instance.payOut({gas: 4000000});
       })
       // .then(function(res){
       //   console.log(res.toString());
