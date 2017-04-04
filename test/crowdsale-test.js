@@ -4,6 +4,7 @@ const rpc = require("../utils/rpc-helper.js");
 const extensions = require("../utils/test-extensions.js");
 const logging = require("../utils/contract-logger.js");
 const CrowdSale = artifacts.require("./CrowdSale.sol");
+const sim = require("../utils/simulation-utils.js");
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
@@ -127,7 +128,6 @@ contract('CrowdSale', function(accounts) {
         var timeAdvance = 25 * 60 * 60; // 25 hrs
         rpc.increaseTime(timeAdvance); //fast-forward with next block
         rpc.mineBlock();  // advance to next block
-        return instance.checkTokenOrder.call(address_1); // ping contract to advance its state
       })
       .then(function(){
         return CrowdSale.deployed();
@@ -137,3 +137,33 @@ contract('CrowdSale', function(accounts) {
       })
   });
 });
+
+var promises = [];
+
+describe.skip("Fullscale test", function(){
+contract("CrowdSale", function(accounts){
+  it("can sustain a large crowdsale", function(){
+    return CrowdSale.deployed()
+      .then(function(instance){
+        for(let i=1; i<accounts.length; i++){
+          promises.push(sim.safeCall(function(){
+            instance.prebuyTokens({
+              value: web3.toWei(1,'ether'),//sim.randomWei(),
+              from: accounts[i]
+            });
+          }));
+        }
+        return Promise.all(promises);
+      })
+      .then(function(){
+        return CrowdSale.deployed();
+      })
+      .then(function(instance){
+        var timeAdvance = 25 * 60 * 60; // 25 hrs
+        rpc.mineBlock();  // advance to next block
+        //rpc.increaseTime(timeAdvance); //fast-forward with next block
+        instance.payOut({from: deployer, gas: 4000000});
+      })
+  });
+})
+})

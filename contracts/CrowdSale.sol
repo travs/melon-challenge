@@ -84,7 +84,7 @@ contract CrowdSale {
   }
 
   //BUSINESS LOGIC
-  function payOut () public timedTransition inState(State.Payout) onlyAdmin {
+  function payOut () public timedTransition onlyAdmin {
     // begin multi-stage equitable payouts
     uint remainingTokens = totalTokenSupply; // undistributed tokens
     address[] remBuyers = pruneOrders(); // remove buyers that decided to completely refund
