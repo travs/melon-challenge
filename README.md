@@ -33,7 +33,7 @@ While sale is open:
   - Allow refund
 
 After sale ends:
-1. Calculate `quota` as `b/s`
+1. Calculate `quota` as `s/b`
 2. Fulfill orders `<= quota`
 3. Fulfill orders `> quota` _up to_ quota, and track the remainders
 4. Repeat 1 to 3 with unfulfilled buyers as `b`, and remaining tokens as `s`
@@ -95,7 +95,7 @@ At the end of the distribution, everyone has gotten their order filled except th
 ### TODO
 
 - [ ] Make a minimal frontend
-- [ ] Make orders/withdrawals pseudonymous/encrypted
+- [ ] Make orders/withdrawals encrypted
 - [ ] Discuss advantages/disadvantages of this algorithm
   - (how is it more equal, transparent and trustless than another solution?)
 - [ ] Add fallback function
@@ -107,7 +107,7 @@ At the end of the distribution, everyone has gotten their order filled except th
   - [x] Test reject withdrawal below minimum
   - [x] Test someone can't easily see another's orders
   - [x] Test someone can see their own orders
-  - [ ] Test early payout call does not trigger sale end
+  - [x] Test early payout call does not trigger sale end
   - [ ] Simulate a crowdsale
 - [x] Add ability to time travel in testRPC
 - [x] Implement timed transitions pattern in contract

@@ -70,6 +70,9 @@ contract CrowdSale {
     // Call this function with the amount user want's refunded to their address.
     // ETH (amt) withdrawn to user's address, and their order is updated.
     if(amt < minTransaction) throw;
+    uint nMln = unfulfilledOrders[msg.sender];
+    uint nEth = nMln * tokenPrice;
+    if(nEth < amt) throw;
     uint numTokens = amt / tokenPrice;
     unfulfilledOrders[msg.sender] -= numTokens;
     if(!msg.sender.send(amt)) throw;
