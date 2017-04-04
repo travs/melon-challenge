@@ -79,11 +79,9 @@ contract CrowdSale {
     LogWithdrawal(msg.sender, msg.value, numTokens);
   }
 
-  function checkTokenOrder (address addr) public timedTransition returns (uint){
+  function checkTokenOrder () public timedTransition inState(State.Open) returns (uint){
     // get the number of tokens currently on order for an address.
-    // users can only check their own balance, but admin can check anyone's.
-    if(msg.sender != addr && msg.sender != admin) throw;
-    return unfulfilledOrders[addr];
+    return unfulfilledOrders[msg.sender];
   }
 
   //BUSINESS LOGIC
@@ -92,7 +90,7 @@ contract CrowdSale {
     uint remainingTokens = totalTokenSupply; // undistributed tokens
     address[] remBuyers = pruneOrders(); // remove buyers that decided to completely refund
 
-    uint quota = totalTokenSupply / buyers.length;
+    uint quota = totalTokenSupply / remBuyers.length;
     LogQuotaUpdate(quota);
     LogDebug(remBuyers.length);
 
