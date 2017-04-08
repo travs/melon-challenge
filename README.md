@@ -112,3 +112,5 @@ At the end of the distribution, everyone has gotten their order filled except th
 - [x] Add ability to time travel in testRPC
 - [x] Implement timed transitions pattern in contract
 - [x] Add lower bound to order size to prevent spamming of the blockchain with tiny orders (suggestion by @retotrinkler)
+- [ ] Remove/reduce the for-loops used here (block gas limit may be reached)
+- [ ] SMS verification
