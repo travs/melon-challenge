@@ -5,6 +5,7 @@ const extensions = require("../utils/test-extensions.js");
 const logging = require("../utils/contract-logger.js");
 const CrowdSale = artifacts.require("./CrowdSale.sol");
 const sim = require("../utils/simulation-utils.js");
+const childProcess = require('child_process');
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
@@ -32,9 +33,10 @@ contract('CrowdSale', function(accounts) {
       .then(function(instance) {
         assert.equal(web3.eth.getBalance(instance.address).toNumber(),
           sentWei, "Correct Ether not in contract's address.");
-        return instance.checkTokenOrder.call(address_1); // returns a value
+        return instance.checkTokenOrder.call({from: address_1}); // returns a value
       })
       .then(function(orderAmt){
+        console.log(orderAmt.toNumber());
           assert.equal(orderAmt, 4, "Incorrect number of tokens on order");
       });
   });
@@ -56,7 +58,7 @@ contract('CrowdSale', function(accounts) {
       .then(function(instance){
         assert.equal(web3.eth.getBalance(instance.address).toNumber(),
           web3.toWei(1, 'ether'), "Incorrect Ether left at contract address");
-        return instance.checkTokenOrder.call(address_1);
+        return instance.checkTokenOrder.call({from: address_1});
       })
       .then(function(orderAmt){
         assert.equal(orderAmt, 2, "Incorrect tokens on order after withdrawal");
@@ -75,7 +77,7 @@ contract('CrowdSale', function(accounts) {
         return CrowdSale.deployed();  // get the contract instance
       })
       .then(function(instance){
-        return instance.checkTokenOrder.call(address_2, {from: address_2});
+        return instance.checkTokenOrder.call({from: address_2});
       })
       .then(function(orderAmt){
         assert.equal(orderAmt, 0, "Order under limit was erroneously accepted");
@@ -91,18 +93,11 @@ contract('CrowdSale', function(accounts) {
           "No error thrown, or incorrect error thrown.");
       })
   });
-  it("should reject someone looking for another person's orders", function(){
-    return CrowdSale.deployed()
-      .then(function(instance) {
-        extensions.assertThrows(instance.checkTokenOrder.call,
-          [address_1, {from: address_2}], "No/incorrect error thrown");
-      })
-  });
   it("should allow someone to look at their own order", function(){
     return CrowdSale.deployed()
       .then(function(instance) {
         assert.doesNotThrow(function(){
-          return instance.checkTokenOrder.call(address_1, {from: address_1});
+          return instance.checkTokenOrder.call({from: address_1});
         })
       })
   });
