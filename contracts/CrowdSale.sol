@@ -43,6 +43,7 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     event LogWithdrawal(address _addr, uint _numWei, uint _numTokens);
     event LogPayout(address _to, uint _numTokens);
     event LogQuotaUpdate(uint _q);
+    event LogDebug(uint _v);
 
     // MODIFIERS
     modifier onlyAdmin () {
@@ -68,10 +69,10 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
 
     modifier payoutTransition () {
         if(payoutPhase == PayoutPhase.Pruning && iBatch >= remBuyers.length) {
-            delete remBuyers;   //TODO: set remBuyers to be prunedBuyers
-            remBuyers = prunedBuyers;
             quota = remainingTokens / remBuyers.length;
             LogQuotaUpdate(quota);
+            delete remBuyers;   //TODO: set remBuyers to be prunedBuyers
+            remBuyers = prunedBuyers;
             if(remainingTokens > 0) {
                 payoutPhase = PayoutPhase.Distributing;
                 iBatch = 0;
@@ -93,7 +94,10 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
 
     modifier batchProcess () {
         for (uint i=0; i < batchSize; i++) {
-            _;
+            if(iBatch < remBuyers.length){
+                _;
+                iBatch += 1;   //TODO: this becomes larger than remBuyers.length when we get to the end of the array
+            }
         }
     }
 
@@ -106,7 +110,7 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     }
 
     // USER INTERFACE
-    function prebuyTokens () public timedTransition inState(State.Open) payable {
+    function prebuyTokens () public inState(State.Open) payable {
         // Send ETH to this function, and order for sender's address is updated.
         // ETH is held at this contract's address.
         if(msg.value < minTransaction) throw;
@@ -116,7 +120,7 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         LogPrebuy(msg.sender, msg.value, numPreboughtTokens);
     }
 
-    function withdrawFunding (uint amt) public timedTransition inState(State.Open) {
+    function withdrawFunding (uint amt) public inState(State.Open) {
         // Call this function with the amount user want's refunded to their address.
         // ETH (amt) withdrawn to user's address, and their order is updated.
         if(amt < minTransaction) throw;
@@ -129,7 +133,7 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         LogWithdrawal(msg.sender, amt, numTokens);
     }
 
-    function checkTokenOrder () constant public timedTransition inState(State.Open) returns (uint){
+    function checkTokenOrder () constant public inState(State.Open) returns (uint){
         // get the number of tokens currently on order for an address.
         return unfulfilledOrders[msg.sender];
     }
@@ -139,6 +143,7 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     inPayoutPhase(PayoutPhase.Pre) {
         // begin multi-stage equitable payouts
         remainingTokens = totalTokenSupply;
+        remBuyers = buyers;
         payoutPhase = PayoutPhase.Pruning;
     }
 
@@ -149,11 +154,10 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     }
 
     // HELPER FUNCTIONS
-    function pruneOrderBatch () private inState(State.Payout)
-    inPayoutPhase(PayoutPhase.Pruning) batchProcess {
+    function pruneOrderBatch () private batchProcess inState(State.Payout)
+    inPayoutPhase(PayoutPhase.Pruning) payoutTransition {
         // remove buyers with no unfulfilled order remaining in next batch
         pruneOrder(remBuyers[iBatch]);
-        iBatch += 1;   //TODO: this becomes larger than remBuyers.length when we get to the end of the array
     }
 
     function pruneOrder (address addr) private payoutTransition
@@ -166,7 +170,6 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     function processOrderBatch () private inState(State.Payout) batchProcess {
         // fulfill the next batch of orders
         processOrder(remBuyers[iBatch]);
-        iBatch += 1;   //TODO: this becomes larger than remBuyers.length when we get to the end of the array
     }
 
     function processOrder (address addr) private payoutTransition
@@ -187,7 +190,6 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     inPayoutPhase(PayoutPhase.Refunding) batchProcess {
         // refund orders still unfulfilled at the end of payout (if any)
         refundOrder(remBuyers[iBatch]);
-        iBatch += 1; //TODO: this becomes larger than remBuyers.length when we get to the end of the array
     }
 
     function refundOrder (address addr) private payoutTransition

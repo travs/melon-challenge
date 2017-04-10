@@ -68,7 +68,7 @@ contract('CrowdSale', function(accounts) {
     var underLimitWei = web3.toWei(0.9999999, 'ether');  // min is 1 Ether
     return CrowdSale.deployed()
       .then(function(instance) {
-        extensions.assertThrows(instance.prebuyTokens,
+        return extensions.assertThrows(instance.prebuyTokens,
           [{value: underLimitWei, from: address_2}],
           "No error thrown, or incorrect error thrown.");
       })
@@ -87,7 +87,7 @@ contract('CrowdSale', function(accounts) {
     underLimitWei = web3.toWei(0.99999, 'ether');
     return CrowdSale.deployed()
       .then(function(instance) {
-        extensions.assertThrows(instance.withdrawFunding,
+        return extensions.assertThrows(instance.withdrawFunding,
         [underLimitWei, {from: address_1}],
           "No error thrown, or incorrect error thrown.");
       })
@@ -100,10 +100,10 @@ contract('CrowdSale', function(accounts) {
         })
       })
   });
-  it("should not allow a payout call before sale ends", function(){
+  it("should not allow an initiatePayout call before sale ends", function(){
     return CrowdSale.deployed()
       .then(function(instance) {
-        return extensions.assertThrows(instance.initiatePayout.call,
+        return extensions.assertThrows(instance.initiatePayout,
           [], "No/incorrect error thrown");
       })
       .then(function(){
@@ -115,30 +115,45 @@ contract('CrowdSale', function(accounts) {
       .then(function(result){
         assert(result == 0, "We are not in the first stage when we should be.");
       })
-  })
-  it("should allow a payout call after time limit", function(){
-      var timeAdvance = 25 * 60 * 60; // 25 hrs
-      return rpc.increaseTime(timeAdvance)
-      .then(function(){
-        return rpc.mineBlock();
+  });
+  it("should not allow continuePayout before payout is initiated", function(){
+    return CrowdSale.deployed()
+      .then(function(instance) {
+        return extensions.assertThrows(instance.continuePayout,
+          [], "No/incorrect error thrown");
       })
-      .then(function(){
-        return CrowdSale.deployed();
-      })
-      .then(function(instance){
-        assert.doesNotThrow(function(){
-          return instance.initiatePayout({from: address_2});
-        });
-      })
-      .then(function(){
-        return CrowdSale.deployed();
-      })
-      .then(function(instance){
-        return instance.state.call();
-      })
-      .then(function(result){
-        assert(result == 1, "We are not in the payout state.");
+  });
+  it("should allow initiatePayout after time limit", function(){
+    var timeAdvance = 25 * 60 * 60; // 25 hrs
+    return rpc.increaseTime(timeAdvance)
+    .then(function(){
+      return rpc.mineBlock();
+    })
+    .then(function(){
+      return CrowdSale.deployed();
+    })
+    .then(function(instance){
+      assert.doesNotThrow(function(){
+        return instance.initiatePayout({from: address_2});
       });
+    })
+    .then(function(){
+      return CrowdSale.deployed();
+    })
+    .then(function(instance){
+      return instance.state.call();
+    })
+    .then(function(result){
+      assert(result == 1, "We are not in the payout state.");
+    });
+  });
+  it("should allow continuePayout after payout is initiated", function(){
+    return CrowdSale.deployed()
+    .then(function(instance){
+      assert.doesNotThrow(function() {
+        return instance.continuePayout({from: address_1});
+      });
+    })
   });
 });
 
