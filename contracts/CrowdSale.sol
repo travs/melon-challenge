@@ -17,8 +17,8 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     mapping (address => uint) private unfulfilledOrders; // MLN ordered by address
     mapping (address => uint) private tokensOwned;  // MLN owned by address
     address[] public buyers;                       // list of buyers' addresses
-    address[] finalBuyers;
-    address[] remBuyers;
+    address[] private prunedBuyers;
+    address[] private remBuyers;
 
     enum State {
     Open,
@@ -27,9 +27,9 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     }
 
     enum PayoutPhase {
+    Pre,
     Pruning,
-    InBatch,
-    DoneBatch,
+    Distributing,
     Refunding
     }
 
@@ -66,18 +66,21 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     }
 
     modifier payoutTransition () {
-        if(payoutPhase == payoutPhase.Pruning && iBatch >= buyers.length) {
-
-            payoutPhase = PayoutPhase.InBatch;
+        if(payoutPhase == PayoutPhase.Pruning && iBatch >= remBuyers.length) {
+            delete remBuyers;   //TODO: set remBuyers to be prunedBuyers
+            remBuyers = prunedBuyers;
+            quota = remainingTokens / remBuyers.length;
+            LogQuotaUpdate(quota);
+            payoutPhase = PayoutPhase.Distributing;
+            iBatch = 0;
         }
-        else if(payoutPhase == PayoutPhase.InBatch && iBatch >= remBuyers.length)
-            payoutPhase = PayoutPhase.DoneBatch;
-        else if(payoutPhase == PayoutPhase.DoneBatch) {
+        else if(payoutPhase == PayoutPhase.Distributing && iBatch >= remBuyers.length)
             if(remainingTokens == 0)
                 payoutPhase = PayoutPhase.Refunding;
             else if(remainingTokens > 0) {
+                delete prunedBuyers; //empty prunedBuyers
                 payoutPhase = PayoutPhase.Pruning;
-
+                iBatch = 0;
             }
         }
         _;
@@ -93,6 +96,7 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     function CrowdSale (uint saleHours) {
         admin = msg.sender;
         state = State.Open;
+        payoutPhase = PayoutPhase.Pre;
         saleEnd = now + (saleHours * 1 hours);
     }
 
@@ -126,32 +130,18 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     }
 
     //BUSINESS LOGIC
-    function initiatePayout () public timedTransition inState(State.Payout) {
+    function initiatePayout () public timedTransition inState(State.Payout)
+    inPayoutPhase(PayoutPhase.Pre) {
         // begin multi-stage equitable payouts
         remainingTokens = totalTokenSupply;
-        remBuyers = pruneOrders(); // remove buyers that decided to completely refund
-        quota = totalTokenSupply / remBuyers.length;
-        LogQuotaUpdate(quota);
+        payoutPhase = PayoutPhase.Pruning;
     }
 
     function continuePayout () public inState(State.Payout) {
         if(payoutPhase == PayoutPhase.Pruning) pruneOrderBatch();
-        else if(payoutPhase == PayoutPhase.InBatch) processOrderBatch();
+        else if(payoutPhase == PayoutPhase.Distributing) processOrderBatch();
+        else if(payoutPhase == PayoutPhase.Refunding);
 
-
-        remBuyers = pruneOrders();  // remove buyers from list if their order is filled
-        if(remBuyers.length != 0) {
-            quota = remainingTokens / remBuyers.length;
-            LogQuotaUpdate(quota);
-        }
-
-        // refund orders still unfulfilled at the end of payout (if any)
-        uint amtToRefund = 0;
-        for (i=0; i < buyers.length; i++) {
-            amtToRefund = unfulfilledOrders[buyers[i]] * tokenPrice;
-            unfulfilledOrders[buyers[i]] = 0; // refunded
-            if(!buyers[i].send(amtToRefund)) throw;
-        }
         state = State.Closed;
     }
 
@@ -163,18 +153,17 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     }
 
     function processOrder (address addr) private payoutTransition
-    inPayoutPhase(PayoutPhase.InBatch) inState(State.Payout) {
+    inState(State.Payout) inPayoutPhase(PayoutPhase.Distributing) {
         //change the owned tokens according to an address's order
         if(unfulfilledOrders[addr] > quota) { // order is above quota
             tokensOwned[addr] += quota;
-            remainingTokens -= quota; // subtract from remaining tokens
             unfulfilledOrders[addr] -= quota;
         } else { // order is below or equal to quota
             tokensOwned[addr] += unfulfilledOrders[addr];
-            remainingTokens -= tokensOwned[addr]; // subtract from remaining tokens
             unfulfilledOrders[addr] = 0;
-            LogPayout(addr, tokensOwned[addr]); //logs when token attribution complete for each buyer
+            LogPayout(addr, tokensOwned[addr]); //logs token attribution complete for each buyer
         }
+        remainingTokens -= tokensOwned[addr]; // subtract from remaining tokens
     }
 
     function pruneOrderBatch () private inState(State.Payout)
@@ -188,6 +177,19 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     inState(State.Payout) inPayoutPhase(PayoutPhase.Pruning) {
         // only add address to new list if there is an unfulfilled order
         if(unfulfilledOrders[addr] != 0)
-            finalBuyers.push(addr);
+            prunedBuyers.push(addr);
+    }
+
+    function refundOrderBatch () private inState(State.Payout)
+    inPayoutPhase(PayoutPhase.Refunding) batchProcess {
+        // refund orders still unfulfilled at the end of payout (if any)
+        refundOrder(remBuyers[iBatch]);
+    }
+
+    function refundOrder (address addr) private payoutTransition
+    inState(State.Payout) inPayoutPhase(PayoutPhase.Refunding) {
+        uint amtToRefund = unfulfilledOrders[addr] * tokenPrice;
+        unfulfilledOrders[addr] = 0; // refunded
+        if(!addr.send(amtToRefund)) throw;
     }
 }
