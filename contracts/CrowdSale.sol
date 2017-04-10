@@ -30,7 +30,8 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     Pre,
     Pruning,
     Distributing,
-    Refunding
+    Refunding,
+    Post
     }
 
     // STATE VARIABLES
@@ -71,17 +72,21 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
             remBuyers = prunedBuyers;
             quota = remainingTokens / remBuyers.length;
             LogQuotaUpdate(quota);
-            payoutPhase = PayoutPhase.Distributing;
-            iBatch = 0;
-        }
-        else if(payoutPhase == PayoutPhase.Distributing && iBatch >= remBuyers.length)
-            if(remainingTokens == 0)
-                payoutPhase = PayoutPhase.Refunding;
-            else if(remainingTokens > 0) {
-                delete prunedBuyers; //empty prunedBuyers
-                payoutPhase = PayoutPhase.Pruning;
+            if(remainingTokens > 0) {
+                payoutPhase = PayoutPhase.Distributing;
                 iBatch = 0;
             }
+            else if(remainingTokens == 0)
+                payoutPhase = PayoutPhase.Refunding;
+        }
+        else if(payoutPhase == PayoutPhase.Distributing && iBatch >= remBuyers.length){
+            delete prunedBuyers; //empty prunedBuyers
+            payoutPhase = PayoutPhase.Pruning;
+            iBatch = 0;
+        }
+        else if(payoutPhase == PayoutPhase.Refunding && iBatch >= remBuyers.length){
+            payoutPhase = PayoutPhase.Post;
+            state = State.Closed;
         }
         _;
     }
@@ -121,7 +126,7 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         uint numTokens = amt / tokenPrice;
         unfulfilledOrders[msg.sender] -= numTokens;
         if(!msg.sender.send(amt)) throw;
-        LogWithdrawal(msg.sender, msg.value, numTokens);
+        LogWithdrawal(msg.sender, amt, numTokens);
     }
 
     function checkTokenOrder () constant public timedTransition inState(State.Open) returns (uint){
@@ -140,12 +145,24 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     function continuePayout () public inState(State.Payout) {
         if(payoutPhase == PayoutPhase.Pruning) pruneOrderBatch();
         else if(payoutPhase == PayoutPhase.Distributing) processOrderBatch();
-        else if(payoutPhase == PayoutPhase.Refunding);
-
-        state = State.Closed;
+        else if(payoutPhase == PayoutPhase.Refunding) refundOrderBatch();
     }
 
     // HELPER FUNCTIONS
+    function pruneOrderBatch () private inState(State.Payout)
+    inPayoutPhase(PayoutPhase.Pruning) batchProcess {
+        // remove buyers with no unfulfilled order remaining in next batch
+        pruneOrder(remBuyers[iBatch]);
+        iBatch += 1;   //TODO: this becomes larger than remBuyers.length when we get to the end of the array
+    }
+
+    function pruneOrder (address addr) private payoutTransition
+    inState(State.Payout) inPayoutPhase(PayoutPhase.Pruning) {
+        // only add address to new list if there is an unfulfilled order
+        if(unfulfilledOrders[addr] != 0)
+            prunedBuyers.push(addr);
+    }
+
     function processOrderBatch () private inState(State.Payout) batchProcess {
         // fulfill the next batch of orders
         processOrder(remBuyers[iBatch]);
@@ -166,24 +183,11 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         remainingTokens -= tokensOwned[addr]; // subtract from remaining tokens
     }
 
-    function pruneOrderBatch () private inState(State.Payout)
-    inPayoutPhase(PayoutPhase.Pruning) batchProcess {
-        // remove buyers with no unfulfilled order remaining in next batch
-        pruneOrder(remBuyers[iBatch]);
-        iBatch += 1;   //TODO: this becomes larger than remBuyers.length when we get to the end of the array
-    }
-
-    function pruneOrder (address addr) private payoutTransition
-    inState(State.Payout) inPayoutPhase(PayoutPhase.Pruning) {
-        // only add address to new list if there is an unfulfilled order
-        if(unfulfilledOrders[addr] != 0)
-            prunedBuyers.push(addr);
-    }
-
     function refundOrderBatch () private inState(State.Payout)
     inPayoutPhase(PayoutPhase.Refunding) batchProcess {
         // refund orders still unfulfilled at the end of payout (if any)
         refundOrder(remBuyers[iBatch]);
+        iBatch += 1; //TODO: this becomes larger than remBuyers.length when we get to the end of the array
     }
 
     function refundOrder (address addr) private payoutTransition

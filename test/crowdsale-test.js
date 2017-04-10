@@ -104,7 +104,7 @@ contract('CrowdSale', function(accounts) {
   it("should not allow a payout call before sale ends", function(){
     return CrowdSale.deployed()
       .then(function(instance) {
-        return extensions.assertThrows(instance.payOut.call,
+        return extensions.assertThrows(instance.initiatePayout.call,
           [], "No/incorrect error thrown");
       })
       .then(function(){
@@ -128,7 +128,7 @@ contract('CrowdSale', function(accounts) {
         return CrowdSale.deployed();
       })
       .then(function(instance){
-        assert.doesNotThrow(instance.payOut);
+        assert.doesNotThrow(instance.initiatePayout);
       })
   });
 });
