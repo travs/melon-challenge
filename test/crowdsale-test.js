@@ -144,8 +144,17 @@ contract('CrowdSale', function(accounts) {
       return instance.state.call();
     })
     .then(function(result){
-      assert(result == 1, "We are not in the payout state.");
-    });
+      assert.equal(result, 1, "We are not in the payout state.");
+    })
+    .then(function(){
+      return CrowdSale.deployed();
+    })
+    .then(function(instance){
+      return instance.payoutPhase.call();
+    })
+    .then(function(result){
+      assert.equal(result.toNumber(), 1, "We are not in the correct phase of payout.");
+    })
   });
   it("should allow continuePayout after payout is initiated", function(){
     return CrowdSale.deployed()
@@ -153,6 +162,33 @@ contract('CrowdSale', function(accounts) {
       assert.doesNotThrow(function() {
         return instance.continuePayout({from: address_1});
       });
+    })
+    .then(function(){
+      return CrowdSale.deployed();
+    })
+    .then(function(instance){
+      return instance.payoutPhase.call();
+    })
+    .then(function(result) {
+      assert.equal(result.toNumber(), 2, "We did not transition to the correct payout phase.");
+    });
+  });
+  it("should transition through payout phases correctly", function(){
+    return CrowdSale.deployed()
+    .then(function(instance){
+      return instance.continuePayout({from: address_1});
+    })
+    .then(function(){
+      return CrowdSale.deployed();
+    })
+    .then(function(instance){
+      return instance.payoutPhase.call();
+    })
+    .then(function(result){
+      // should go back to first phase (i.e. start a new distribution round),
+      // since not all tokens have been distributed
+      assert.equal(result.toNumber(), 1,
+        "Did not transition back to first payout phase");
     })
   });
 });

@@ -109,8 +109,10 @@ At the end of the distribution, everyone has gotten their order filled except th
   - [x] Test someone can see their own orders
   - [x] Test early payout call does not trigger sale end
   - [ ] Simulate a crowdsale
+  - [ ] Refactor tests to reduce boilerplate (e.g. all the calls to get the contract instance)
 - [x] Add ability to time travel in testRPC
 - [x] Implement timed transitions pattern in contract
 - [x] Add lower bound to order size to prevent spamming of the blockchain with tiny orders (suggestion by @retotrinkler)
 - [ ] Remove/reduce the for-loops used here (block gas limit may be reached)
+- [ ] Factor out the batch/chunk processing to be more abstract
 - [ ] SMS verification
