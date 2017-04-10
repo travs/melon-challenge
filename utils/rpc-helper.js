@@ -25,11 +25,11 @@ function rpc(method, arg) {
 // END CODE BLOCK
 
 function increaseTime(seconds){
-  rpc('evm_increaseTime', [seconds]);
+  return rpc('evm_increaseTime', [seconds]);
 }
 
 function mineBlock(){
-  rpc('evm_mine');
+  return rpc('evm_mine');
 }
 
 module.exports = {
