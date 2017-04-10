@@ -36,7 +36,6 @@ contract('CrowdSale', function(accounts) {
         return instance.checkTokenOrder.call({from: address_1}); // returns a value
       })
       .then(function(orderAmt){
-        console.log(orderAmt.toNumber());
           assert.equal(orderAmt, 4, "Incorrect number of tokens on order");
       });
   });
@@ -66,7 +65,7 @@ contract('CrowdSale', function(accounts) {
   });
   it("should reject orders below the lower limit", function () {
     // checks that a buyer cannot purchase below the lower funding limit
-    var underLimitWei = web3.toWei(0.9999999, 'ether');  // limit is 1 Ether
+    var underLimitWei = web3.toWei(0.9999999, 'ether');  // min is 1 Ether
     return CrowdSale.deployed()
       .then(function(instance) {
         extensions.assertThrows(instance.prebuyTokens,
@@ -118,18 +117,28 @@ contract('CrowdSale', function(accounts) {
       })
   })
   it("should allow a payout call after time limit", function(){
-    return CrowdSale.deployed()
-      .then(function(instance){
-        var timeAdvance = 25 * 60 * 60; // 25 hrs
-        rpc.increaseTime(timeAdvance); //fast-forward with next block
-        rpc.mineBlock();  // advance to next block
+      var timeAdvance = 25 * 60 * 60; // 25 hrs
+      return rpc.increaseTime(timeAdvance)
+      .then(function(){
+        return rpc.mineBlock();
       })
       .then(function(){
         return CrowdSale.deployed();
       })
       .then(function(instance){
-        assert.doesNotThrow(instance.initiatePayout);
+        assert.doesNotThrow(function(){
+          return instance.initiatePayout({from: address_2});
+        });
       })
+      .then(function(){
+        return CrowdSale.deployed();
+      })
+      .then(function(instance){
+        return instance.state.call();
+      })
+      .then(function(result){
+        assert(result == 1, "We are not in the payout state.");
+      });
   });
 });
 
