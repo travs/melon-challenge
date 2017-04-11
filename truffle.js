@@ -1,12 +1,15 @@
+const TestRPC = require("ethereumjs-testrpc");
+
 module.exports = {
   networks: {
     development: {
-      host: "localhost",
-      port: 8545,
-      network_id: "*" // Match any network id
+      network_id: "*", // Match any network id
+      provider: new TestRPC.provider()
     }
   },
   mocha: {
-    slow: 1000
+    slow: 1000,
+    ui: 'bdd',
+    bail: true
   }
 };
