@@ -4,12 +4,19 @@ module.exports = {
   networks: {
     development: {
       network_id: "*", // Match any network id
-      provider: new TestRPC.provider()
+      provider: new TestRPC.provider({
+        "accounts": [
+          {"balance": '0xA968163F0A57B400000'},
+          {"balance": '0xA968163F0A57B400000'},
+          {"balance": '0xA968163F0A57B400000'},
+          {"balance": '0xA968163F0A57B400000'}
+        ]
+      })
     }
   },
   mocha: {
     slow: 1000,
-    ui: 'bdd',
+    ui: "bdd",
     bail: true
   }
 };

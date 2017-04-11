@@ -18,7 +18,7 @@ contract('CrowdSale', function(accounts) {
     .then(function(instance) {
       return instance.prebuyTokens({value: web3.toWei(2, 'ether'), from: accounts[1]});
     }).then(function(){
-      return CrowdSale.deployed()
+      return CrowdSale.deployed();
     })
     .then(function(instance){
       return new Promise(function(resolve, reject){
