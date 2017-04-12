@@ -117,9 +117,26 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         LogWithdrawal(msg.sender, amt, numTokens);
     }
 
+    function withdrawRefund () public inState(State.Payout)
+    inPayoutPhase(PayoutPhase.Refunding) hasOrder {
+        // refund user's order still unfulfilled at the end of payout
+        uint amtToRefund = unfulfilledOrders[msg.sender] * tokenPrice;
+        unfulfilledOrders[msg.sender] = 0;
+        if(msg.sender.send(amtToRefund)) {
+            LogRefund(msg.sender, amtToRefund);   // log success
+        } else {
+            unfulfilledOrders[msg.sender] = amtToRefund;  // failure
+        }
+    }
+
     function checkTokenOrder () constant public inState(State.Open) returns (uint){
         // get the number of tokens currently on order for an address.
         return unfulfilledOrders[msg.sender];
+    }
+
+    function checkTokensOwned () constant public returns (uint){
+        // get the number of tokens owned.
+        return tokensOwned[msg.sender];
     }
 
     //BUSINESS LOGIC
@@ -141,10 +158,10 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     function nextPayoutPhase () private inState(State.Payout) {
         // set pre-conditions for next phase of payout, and transition to it
         if(payoutPhase == PayoutPhase.Pruning) {
-            quota = remainingTokens / remBuyers.length;
-            LogQuotaUpdate(quota);
             delete remBuyers;
             remBuyers = prunedBuyers;
+            quota = remainingTokens / remBuyers.length;
+            LogQuotaUpdate(quota);
             if(remainingTokens > 0) {
                 // pruning -> distributing
                 payoutPhase = PayoutPhase.Distributing;
@@ -189,17 +206,5 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         unfulfilledOrders[addr] -= thisOrderAmt;
         LogPayout(addr, thisOrderAmt); // log token attribution
         remainingTokens -= thisOrderAmt; // subtract from remaining tokens
-    }
-
-    function withdrawRefund () private inState(State.Payout)
-    inPayoutPhase(PayoutPhase.Refunding) hasOrder {
-        // refund orders still unfulfilled at the end of payout (if any)
-        uint amtToRefund = unfulfilledOrders[msg.sender] * tokenPrice;
-        unfulfilledOrders[msg.sender] = 0;
-        if(msg.sender.send(amtToRefund)) {
-            LogRefund(msg.sender, amtToRefund);   // log success
-        } else {
-            unfulfilledOrders[msg.sender] = amtToRefund;  // failure
-        }
     }
 }

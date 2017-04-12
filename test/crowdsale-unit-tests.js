@@ -19,12 +19,7 @@ contract('CrowdSale', function(accounts) {
       return CrowdSale.deployed();
     })
     .then(function(instance){
-      return new Promise(function(resolve, reject){
-        web3.eth.getBalance(instance.address, function(err,res){
-          if (err) reject(err);
-          else resolve(res);
-        });
-      });
+      return extensions.balanceFor(instance.address);
     })
     .then(function(result) {
       assert.equal(result.toNumber(), web3.toWei(2, 'ether'),
