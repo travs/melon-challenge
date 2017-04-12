@@ -18,6 +18,17 @@ function assertThrows (fn, args, msg) {
   })
 }
 
+function balanceFor (addr) {
+  return new Promise(function(resolve, reject){
+    web3.eth.getBalance(addr, function(err,res){
+      if (err) reject(err);
+      else resolve(res);
+    });
+  });
+}
+
+
 module.exports = {
-  assertThrows
+  assertThrows,
+  balanceFor
 }
