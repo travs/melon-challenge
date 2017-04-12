@@ -115,9 +115,12 @@ truffle test
   - [x] Test early payout call does not trigger sale end
   - [x] Simulate a crowdsale
   - [x] Test fallback function
+  - [ ] Larger scale simulation (1000s and more buyers)
   - [ ] Refactor tests to reduce boilerplate (e.g. all the calls to get the contract instance)
 - [ ] Factor out the batch/chunk processing to be more abstract
 - [ ] Make number comparisons in tests BigNumber compliant
+- [ ] Add Pre- and Post- comments for relevant functions
+- [ ] Add ability to withdraw from contract when it is over
 - [ ] Discuss how we can decide where to place the minimum tx value (data-driven approach)
 - [ ] Make a minimal frontend (e.g. webpack)
 - [ ] Make orders/withdrawals encrypted OR SMS verification
