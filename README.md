@@ -100,12 +100,11 @@ truffle test
 
 ### TODO
 
-- [ ] Make a minimal frontend
-- [ ] Make orders/withdrawals encrypted
-- [ ] Discuss advantages/disadvantages of this algorithm
-  - (how is it more equal, transparent and trustless than another solution?)
-- [ ] Add fallback function
-- [ ] Discuss how we can decide where to place the minimum tx value (data-driven approach)
+- [x] Add ability to time travel in testRPC
+- [x] Implement timed transitions pattern in contract
+- [x] Add lower bound to order size to prevent spamming of the blockchain with tiny orders (suggestion by @retotrinkler)
+- [x] Remove/reduce the for-loops used here (block gas limit may be reached)
+- [x] Add fallback function
 - [ ] Cover everything with tests
   - [x] Test accept prebuy order
   - [x] Test allow withdrawal
@@ -114,11 +113,13 @@ truffle test
   - [x] Test someone can't easily see another's orders
   - [x] Test someone can see their own orders
   - [x] Test early payout call does not trigger sale end
-  - [ ] Simulate a crowdsale
+  - [x] Simulate a crowdsale
+  - [x] Test fallback function
   - [ ] Refactor tests to reduce boilerplate (e.g. all the calls to get the contract instance)
-- [x] Add ability to time travel in testRPC
-- [x] Implement timed transitions pattern in contract
-- [x] Add lower bound to order size to prevent spamming of the blockchain with tiny orders (suggestion by @retotrinkler)
-- [x] Remove/reduce the for-loops used here (block gas limit may be reached)
 - [ ] Factor out the batch/chunk processing to be more abstract
-- [ ] SMS verification
+- [ ] Make number comparisons in tests BigNumber compliant
+- [ ] Discuss how we can decide where to place the minimum tx value (data-driven approach)
+- [ ] Make a minimal frontend (e.g. webpack)
+- [ ] Make orders/withdrawals encrypted OR SMS verification
+- [ ] Discuss advantages/disadvantages of this algorithm
+  - (how is it more equal, transparent and trustless than another solution?)

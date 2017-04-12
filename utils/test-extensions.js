@@ -19,6 +19,7 @@ function assertThrows (fn, args, msg) {
 }
 
 function balanceFor (addr) {
+  // return balance of `addr` as a Promise rather than using callbacks
   return new Promise(function(resolve, reject){
     web3.eth.getBalance(addr, function(err,res){
       if (err) reject(err);

@@ -51,14 +51,7 @@ contract('CrowdSale', function(accounts) {
       //   returned_amount, "Incorrect Ether amount withdrawn");
       return CrowdSale.deployed();
     })
-    .then(function(instance){
-      return new Promise(function(resolve, reject){
-        web3.eth.getBalance(instance.address, function(err,res){
-          if (err) reject(err);
-          else resolve(res);
-        });
-      });
-    })
+    .then((instance) => extensions.balanceFor(instance.address))
     .then(function(result){
       assert.equal(result, web3.toWei(1, 'ether'), "Incorrect Ether left at contract address");
     })
@@ -97,9 +90,18 @@ contract('CrowdSale', function(accounts) {
     return CrowdSale.deployed()
     .then(function(instance) {
       return extensions.assertThrows(instance.withdrawFunding,
-      [underLimitWei, {from: accounts[1]}],
+        [underLimitWei, {from: accounts[1]}],
         "No error thrown, or incorrect error thrown.");
     })
+  });
+  it("should reject ether sent with no function call", function() {
+    return CrowdSale.deployed()
+    .then(function(instance) {
+      web3.eth.sendTransaction({from: accounts[1], to: instance.address,
+        value: web3.toWei(10, 'ether')}, function(err, res){
+          assert.isNotNull(err); // we should get an error thrown here
+        })
+    });
   });
   it("should allow someone to look at their own order", function(){
     return CrowdSale.deployed()
@@ -201,32 +203,3 @@ contract('CrowdSale', function(accounts) {
     })
   });
 });
-
-var promises = [];
-describe.skip("Fullscale test", function(){
-contract("CrowdSale", function(accounts){
-  it("can sustain a large crowdsale", function(){
-    return CrowdSale.deployed()
-      .then(function(instance){
-        for(let i=1; i<accounts.length; i++){
-          promises.push(sim.safeCall(function(){
-            instance.prebuyTokens({
-              value: web3.toWei(1,'ether'),
-              from: accounts[i]
-            });
-          }));
-        }
-        return Promise.all(promises);
-      })
-      .then(function(){
-        return CrowdSale.deployed();
-      })
-      .then(function(instance){
-        var timeAdvance = 25 * 60 * 60; // 25 hrs
-        rpc.mineBlock();  // advance to next block
-        //rpc.increaseTime(timeAdvance); //fast-forward with next block
-        instance.payOut({from: deployer, gas: 4000000});
-      })
-  });
-})
-})

@@ -139,6 +139,8 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         return tokensOwned[msg.sender];
     }
 
+    function () {throw;} // throw as fallback
+
     //BUSINESS LOGIC
     function initiatePayout () public timedTransition inState(State.Payout)
     inPayoutPhase(PayoutPhase.Pre) {
