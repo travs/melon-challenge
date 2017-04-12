@@ -2,11 +2,9 @@ const TestRPC = require("ethereumjs-testrpc");
 const rpc = require("../utils/rpc-helper.js");
 const extensions = require("../utils/test-extensions.js");
 const logging = require("../utils/contract-logger.js");
-const sim = require("../utils/simulation-utils.js");
-const childProcess = require('child_process');
 const CrowdSale = artifacts.require("./CrowdSale.sol");
 
-// EVENT LOGGING
+// LOGGING
 logging.logContract(CrowdSale);
 
 // TESTS
@@ -209,65 +207,6 @@ contract('CrowdSale', function(accounts) {
   });
 });
 
-describe.only("Small sample crowdsale", function(){
-contract("CrowdSale", function(accounts){
-  it("can sustain a small sample crowdsale", function(){
-    return CrowdSale.deployed()
-    .then(function(instance){
-      return instance.prebuyTokens({value: web3.toWei(10000, 'ether'), from: accounts[1]});
-    })
-    .then(CrowdSale.deployed)
-    .then(function(instance){
-      return instance.prebuyTokens({value: web3.toWei(15000, 'ether'), from: accounts[2]});
-    })
-    .then(CrowdSale.deployed)
-    .then(function(instance){
-      return instance.prebuyTokens({value: web3.toWei(5000, 'ether'), from: accounts[3]});
-    })
-    .then(CrowdSale.deployed)
-    .then(() => rpc.increaseTime(25 * 60 * 60)) // advance past end of sale time
-    .then(rpc.mineBlock)
-    .then(CrowdSale.deployed)
-    .then(instance => instance.initiatePayout())  // pre -> pruning
-    .then(CrowdSale.deployed)                     // (round 1)
-    .then(instance => instance.continuePayout())  // pruning -> distributing
-    .then(CrowdSale.deployed)
-    .then(instance => instance.payoutPhase.call())
-    .then(res => assert.equal(2, res, "Not in 1st distributing phase."))
-    .then(CrowdSale.deployed)
-    .then(instance => instance.continuePayout())  // distributing -> pruning
-    .then(CrowdSale.deployed)                     // (round 2)
-    .then(instance => instance.payoutPhase.call())
-    .then(res => assert.equal(1, res, "Not in 2nd pruning phase."))
-    .then(CrowdSale.deployed)
-    .then(instance => instance.continuePayout())  // pruning -> distributing
-    .then(CrowdSale.deployed)
-    .then(instance => instance.payoutPhase.call())
-    .then(res => assert.equal(2, res, "Not in 2nd distributing phase."))
-    .then(CrowdSale.deployed)
-    .then(instance => instance.continuePayout())  // distributing -> pruning
-    .then(CrowdSale.deployed)                     // (round 3)
-    .then(instance => instance.payoutPhase.call())
-    .then(res => assert.equal(1, res, "Not in 3rd pruning phase."))
-    .then(CrowdSale.deployed)
-    .then(instance => instance.continuePayout())  // pruning -> distributing
-    .then(CrowdSale.deployed)
-    .then(instance => instance.payoutPhase.call())
-    .then(res => assert.equal(2, res, "Not in 3rd distributing phase."))
-    .then(CrowdSale.deployed)
-    .then(instance => instance.continuePayout())  // distributing -> pruning
-    .then(CrowdSale.deployed)                     // (refund round)
-    .then(instance => instance.payoutPhase.call())
-    .then(res => assert.equal(1, res, "Not in final pruning phase."))
-    .then(CrowdSale.deployed)
-    .then(instance => instance.continuePayout())  // pruning -> refunding
-    .then(CrowdSale.deployed)
-    .then(instance => instance.payoutPhase.call())
-    .then(res => assert.equal(3, res, "Not in refunding phase."))
-  })
-})
-})
-
 var promises = [];
 describe.skip("Fullscale test", function(){
 contract("CrowdSale", function(accounts){
@@ -277,7 +216,7 @@ contract("CrowdSale", function(accounts){
         for(let i=1; i<accounts.length; i++){
           promises.push(sim.safeCall(function(){
             instance.prebuyTokens({
-              value: web3.toWei(1,'ether'),//sim.randomWei(),
+              value: web3.toWei(1,'ether'),
               from: accounts[i]
             });
           }));

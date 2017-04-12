@@ -15,8 +15,9 @@ module.exports = {
     }
   },
   mocha: {
-    slow: 1000,
+    slow: 3000,
     ui: "bdd",
-    bail: true
+    bail: true,  // quit testing on first error
+    reporter: 'spec'
   }
 };

@@ -91,6 +91,12 @@ An example of what this may look like, as we go through the rounds:
 
 At the end of the distribution, everyone has gotten their order filled except the largest buyer (`A`), and `A` still had the order *mostly* filled.
 
+##### Testing:
+
+Try:
+```bash
+truffle test
+```
 
 ### TODO
 
@@ -113,6 +119,6 @@ At the end of the distribution, everyone has gotten their order filled except th
 - [x] Add ability to time travel in testRPC
 - [x] Implement timed transitions pattern in contract
 - [x] Add lower bound to order size to prevent spamming of the blockchain with tiny orders (suggestion by @retotrinkler)
-- [ ] Remove/reduce the for-loops used here (block gas limit may be reached)
+- [x] Remove/reduce the for-loops used here (block gas limit may be reached)
 - [ ] Factor out the batch/chunk processing to be more abstract
 - [ ] SMS verification
