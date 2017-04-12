@@ -130,7 +130,6 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         // transaction sent to this function performs the next required action
         if(payoutPhase == PayoutPhase.Pruning) pruneOrderBatch();
         else if(payoutPhase == PayoutPhase.Distributing) processOrderBatch();
-        else if(payoutPhase == PayoutPhase.Refunding) refundOrderBatch();
     }
 
     // HELPER FUNCTIONS
@@ -187,13 +186,15 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         remainingTokens -= thisOrderAmt; // subtract from remaining tokens
     }
 
-    function refundOrderBatch () private inState(State.Payout)
-    inPayoutPhase(PayoutPhase.Refunding)
-    batchProcess(defaultBatchSize, remBuyers.length) {
+    function withdrawRefund () private inState(State.Payout)
+    inPayoutPhase(PayoutPhase.Refunding) {
         // refund orders still unfulfilled at the end of payout (if any)
-        address addr = remBuyers[iBatch];
-        uint amtToRefund = unfulfilledOrders[addr] * tokenPrice;
-        unfulfilledOrders[addr] -= amtToRefund; // refunded
-        if(!addr.send(amtToRefund)) throw;
+        uint amtToRefund = unfulfilledOrders[msg.sender] * tokenPrice;
+        unfulfilledOrders[msg.sender] = 0;
+        if(msg.sender.send(amtToRefund)) {
+            LogRefund(msg.sender, amtToRefund);   // log success
+        } else {
+            unfulfilledOrders[msg.sender] = amtToRefund;  // failure
+        }
     }
 }
