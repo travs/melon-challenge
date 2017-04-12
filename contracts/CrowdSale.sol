@@ -68,6 +68,11 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         _;
     }
 
+    modifier hasOrder () {
+        if(unfulfilledOrders[msg.sender] == 0) throw;
+        _;
+    }
+
     modifier batchProcess (uint batchSize, uint maximum) {
         for (uint i=0; i < batchSize; i++) {
             if(iBatch < maximum) {
@@ -99,7 +104,7 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
         LogPrebuy(msg.sender, msg.value, numPreboughtTokens);
     }
 
-    function withdrawFunding (uint amt) public inState(State.Open) {
+    function withdrawFunding (uint amt) public inState(State.Open) hasOrder {
         // Call this function with the amount user want's refunded to their address.
         // ETH (amt) withdrawn to user's address, and their order is updated.
         if(amt < minTransaction) throw;
@@ -187,7 +192,7 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     }
 
     function withdrawRefund () private inState(State.Payout)
-    inPayoutPhase(PayoutPhase.Refunding) {
+    inPayoutPhase(PayoutPhase.Refunding) hasOrder {
         // refund orders still unfulfilled at the end of payout (if any)
         uint amtToRefund = unfulfilledOrders[msg.sender] * tokenPrice;
         unfulfilledOrders[msg.sender] = 0;
