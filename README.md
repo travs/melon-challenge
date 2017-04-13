@@ -118,7 +118,7 @@ truffle test
   - [ ] Larger scale simulation (1000s and more buyers)
   - [ ] Refactor tests to reduce boilerplate (e.g. all the calls to get the contract instance)
 - [ ] Factor out the batch/chunk processing to be more abstract
-- [ ] Make number comparisons in tests BigNumber compliant
+- [x] Make number comparisons in tests BigNumber compliant
 - [x] Add Pre- and Post- comments for relevant functions
 - [ ] Add ability to withdraw from contract when it is over
 - [ ] Discuss how we can decide where to place the minimum tx value (data-driven approach)

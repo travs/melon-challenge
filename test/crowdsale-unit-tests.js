@@ -22,7 +22,7 @@ contract('CrowdSale', function(accounts) {
       return extensions.balanceFor(instance.address);
     })
     .then(function(result) {
-      assert.equal(result.toNumber(), web3.toWei(2, 'ether'),
+      assert(result.equals(web3.toWei(2, 'ether')),
         "Correct Ether not in contract's address.");
       return CrowdSale.deployed(); // get our contract instance again
     })
@@ -53,7 +53,7 @@ contract('CrowdSale', function(accounts) {
     })
     .then((instance) => extensions.balanceFor(instance.address))
     .then(function(result){
-      assert.equal(result, web3.toWei(1, 'ether'), "Incorrect Ether left at contract address");
+      assert(result.equals(web3.toWei(1, 'ether')), "Incorrect Ether left at contract address");
     })
     .then(function(){
       return CrowdSale.deployed();
