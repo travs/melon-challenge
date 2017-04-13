@@ -131,9 +131,10 @@ contract CrowdSale {
             throw;
         uint numTokens = amt / tokenPrice;
         unfulfilledOrders[msg.sender] -= numTokens;
-        if(!msg.sender.send(amt))
-            throw;    // TODO: implement withdrawal pattern
-        LogWithdrawal(msg.sender, amt, numTokens);
+        if(msg.sender.send(amt))
+            LogWithdrawal(msg.sender, amt, numTokens);
+        else
+            unfulfilledOrders[msg.sender] += numTokens;
     }
 
     //Pre:  In State.Payout and Refunding phase; Sender has an unfulfilled order
@@ -143,7 +144,6 @@ contract CrowdSale {
         inPayoutPhase(PayoutPhase.Refunding)
         hasOrder
     {
-        // refund user's order still unfulfilled at the end of payout
         uint amtToRefund = unfulfilledOrders[msg.sender] * tokenPrice;
         unfulfilledOrders[msg.sender] = 0;
         if(msg.sender.send(amtToRefund))
