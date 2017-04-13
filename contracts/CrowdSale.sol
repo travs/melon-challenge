@@ -1,10 +1,9 @@
 pragma solidity 0.4.8;
 
 contract CrowdSale {
-/*
-Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
-*/
-
+    /*
+    Implements an equitable, timed, fund-and-release crowdsale.
+    */
     address admin;
     uint public saleEnd;                    // end time for the sale
     uint private quota;                     // max tokens per person this round
@@ -48,18 +47,21 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
 
     // MODIFIERS
     modifier onlyAdmin () {
-        if(msg.sender != admin) throw;
+        if(msg.sender != admin)
+            throw;
         _;
     }
 
     modifier inState (State query) {
-        if(state != query) throw;
+        if(state != query)
+            throw;
         _;
     }
 
     modifier inPayoutPhase (PayoutPhase query) {
         // fails silently
-        if(payoutPhase == query) _;
+        if(payoutPhase == query)
+            _;
     }
 
     modifier timedTransition () {
@@ -69,7 +71,14 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     }
 
     modifier hasOrder () {
-        if(unfulfilledOrders[msg.sender] == 0) throw;
+        if(unfulfilledOrders[msg.sender] == 0)
+            throw;
+        _;
+    }
+
+    modifier isAboveMinTransaction (uint num) {
+        if(num < minTransaction)
+            throw;
         _;
     }
 
@@ -94,119 +103,156 @@ Implements a pseudonymous, equitable, timed, fund-and-release(??) crowdsale.
     }
 
     // USER INTERFACE
-    function prebuyTokens () public inState(State.Open) payable {
-        // Send ETH to this function, and order for sender's address is updated.
-        // ETH is held at this contract's address.
-        if(msg.value < minTransaction) throw;
+
+    //Pre:  In State.Open; Sent value is greater than minimum deposit
+    //Post: Token order for sender's address increased; Contract receives ETH
+    function prebuyTokens ()
+        public
+        payable
+        inState(State.Open)
+        isAboveMinTransaction(msg.value)
+    {
         uint numPreboughtTokens = msg.value / tokenPrice; // division is truncated
         unfulfilledOrders[msg.sender] += numPreboughtTokens;
         buyers.push(msg.sender);
         LogPrebuy(msg.sender, msg.value, numPreboughtTokens);
     }
 
-    function withdrawFunding (uint amt) public inState(State.Open) hasOrder {
-        // Call this function with the amount user want's refunded to their address.
-        // ETH (amt) withdrawn to user's address, and their order is updated.
-        if(amt < minTransaction) throw;
+    //Pre:  In State.Open; Requested withdrawal greater than minimum allowable
+    //Post: Token order for sender's address is reduced; ETH sent back to sender
+    function withdrawFunding (uint amt) public
+        inState(State.Open)
+        hasOrder
+        isAboveMinTransaction(amt)
+    {
         uint nMln = unfulfilledOrders[msg.sender];
         uint nEth = nMln * tokenPrice;
-        if(nEth < amt) throw;
+        if(nEth < amt)
+            throw;
         uint numTokens = amt / tokenPrice;
         unfulfilledOrders[msg.sender] -= numTokens;
-        if(!msg.sender.send(amt)) throw;
+        if(!msg.sender.send(amt))
+            throw;    // TODO: implement withdrawal pattern
         LogWithdrawal(msg.sender, amt, numTokens);
     }
 
-    function withdrawRefund () public inState(State.Payout)
-    inPayoutPhase(PayoutPhase.Refunding) hasOrder {
+    //Pre:  In State.Payout and Refunding phase; Sender has an unfulfilled order
+    //Post: Sender receives ETH refund of their unfulfilled order
+    function withdrawRefund () public
+        inState(State.Payout)
+        inPayoutPhase(PayoutPhase.Refunding)
+        hasOrder
+    {
         // refund user's order still unfulfilled at the end of payout
         uint amtToRefund = unfulfilledOrders[msg.sender] * tokenPrice;
         unfulfilledOrders[msg.sender] = 0;
-        if(msg.sender.send(amtToRefund)) {
+        if(msg.sender.send(amtToRefund))
             LogRefund(msg.sender, amtToRefund);   // log success
-        } else {
+        else
             unfulfilledOrders[msg.sender] = amtToRefund;  // failure
-        }
     }
 
-    function checkTokenOrder () constant public inState(State.Open) returns (uint){
-        // get the number of tokens currently on order for an address.
+    //Pre:  In State.Open
+    //Post: Returns number of tokens currently on order for sender
+    function checkTokenOrder () public constant
+        inState(State.Open)
+        returns (uint)
+    {
         return unfulfilledOrders[msg.sender];
     }
 
-    function checkTokensOwned () constant public returns (uint){
-        // get the number of tokens owned.
+    //Pre:  None
+    //Post: Returns number of tokens owned by sender
+    function checkTokensOwned () public constant returns (uint)
+    {
         return tokensOwned[msg.sender];
     }
 
     function () {throw;} // throw as fallback
 
-    //BUSINESS LOGIC
-    function initiatePayout () public timedTransition inState(State.Payout)
-    inPayoutPhase(PayoutPhase.Pre) {
-        // set variables/state for multi-stage equitable payouts
+    // BUSINESS LOGIC
+
+    //Pre:  Sale time is up; Transitioned to State.Payout and Pre phase
+    //Post: Variables and state for multi-stage equitable payouts are set
+    function initiatePayout () public
+        timedTransition
+        inState(State.Payout)
+        inPayoutPhase(PayoutPhase.Pre)
+    {
         remainingTokens = totalTokenSupply;
         remBuyers = buyers;
         payoutPhase = PayoutPhase.Pruning;
     }
 
-    function continuePayout () public inState(State.Payout) {
-        // transaction sent to this function performs the next required action
-        if(payoutPhase == PayoutPhase.Pruning) pruneOrderBatch();
-        else if(payoutPhase == PayoutPhase.Distributing) processOrderBatch();
+    //Pre:  In State.Payout
+    //Post: Next function required for this phase is called.
+    function continuePayout () public
+        inState(State.Payout)
+    {
+        if(payoutPhase == PayoutPhase.Pruning)
+            pruneOrderBatch();
+        else if(payoutPhase == PayoutPhase.Distributing)
+            processOrderBatch();
     }
 
-    // HELPER FUNCTIONS
-    function nextPayoutPhase () private inState(State.Payout) {
-        // set pre-conditions for next phase of payout, and transition to it
-        if(payoutPhase == PayoutPhase.Pruning) {
+    // PRIVATE HELPER FUNCTIONS
+
+    //Pre:  In State.Payout
+    //Post: Pre-conditions for next phase are set, and phase transitioned to
+    function nextPayoutPhase () private
+        inState(State.Payout)
+    {
+        if (payoutPhase == PayoutPhase.Pruning && remainingTokens > 0) {
+            // pruning -> distributing
+            payoutPhase = PayoutPhase.Distributing;
             delete remBuyers;
             remBuyers = prunedBuyers;
             quota = remainingTokens / remBuyers.length;
             LogQuotaUpdate(quota);
-            if(remainingTokens > 0) {
-                // pruning -> distributing
-                payoutPhase = PayoutPhase.Distributing;
-                iBatch = 0;
-            }
-            else if(remainingTokens == 0) {
-                // pruning -> refunding
-                payoutPhase = PayoutPhase.Refunding;
-            }
-        }
-        else if(payoutPhase == PayoutPhase.Distributing){
-            // distributing -> pruning
-            delete prunedBuyers; //empty prunedBuyers
-            payoutPhase = PayoutPhase.Pruning;
             iBatch = 0;
-        }
-        else if(payoutPhase == PayoutPhase.Refunding){
+        } else if (payoutPhase == PayoutPhase.Pruning && remainingTokens == 0) {
+            // pruning -> refunding
+            payoutPhase = PayoutPhase.Refunding;
+        } else if (payoutPhase == PayoutPhase.Distributing){
+            // distributing -> pruning
+            payoutPhase = PayoutPhase.Pruning;
+            delete prunedBuyers;
+            iBatch = 0;
+        } else if (payoutPhase == PayoutPhase.Refunding){
             // refunding -> closed
             payoutPhase = PayoutPhase.Post;
             state = State.Closed;
         }
     }
 
-    function pruneOrderBatch () private inState(State.Payout)
-    inPayoutPhase(PayoutPhase.Pruning)
-    batchProcess(defaultBatchSize, remBuyers.length) {
-        // remove buyers with no unfulfilled order remaining in next batch
+    //Pre:  In State.Payout and Pruning phase
+    //Post: Batch of buyers with unfulfilled orders are added to updated list
+    function pruneOrderBatch () private
+        inState(State.Payout)
+        inPayoutPhase(PayoutPhase.Pruning)
+        batchProcess(defaultBatchSize, remBuyers.length)
+    {
         address addr = remBuyers[iBatch];
         if(unfulfilledOrders[addr] != 0)
             prunedBuyers.push(addr);
     }
 
-    function processOrderBatch () private inState(State.Payout)
-    inPayoutPhase(PayoutPhase.Distributing)
-    batchProcess(defaultBatchSize, remBuyers.length) {
-        // fulfill the next batch of orders
+    //Pre:  In State.Payout and Distributing phase
+    //Post: Batch of token orders are filled up to quota amount
+    function processOrderBatch () private
+        inState(State.Payout)
+        inPayoutPhase(PayoutPhase.Distributing)
+        batchProcess(defaultBatchSize, remBuyers.length)
+    {
         address addr = remBuyers[iBatch];
         uint thisOrderAmt;
-        if (unfulfilledOrders[addr] > quota) thisOrderAmt = quota;
-        else thisOrderAmt = unfulfilledOrders[addr];    // order < quota
-        tokensOwned[addr] += thisOrderAmt;
+        if (unfulfilledOrders[addr] > quota)
+            thisOrderAmt = quota;
+        else
+            thisOrderAmt = unfulfilledOrders[addr];    // order < quota
         unfulfilledOrders[addr] -= thisOrderAmt;
-        LogPayout(addr, thisOrderAmt); // log token attribution
         remainingTokens -= thisOrderAmt; // subtract from remaining tokens
+        tokensOwned[addr] += thisOrderAmt;
+        LogPayout(addr, thisOrderAmt); // log token attribution
     }
 }
