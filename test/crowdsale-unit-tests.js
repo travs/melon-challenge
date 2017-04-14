@@ -10,11 +10,11 @@ logging.logContract(CrowdSale);
 contract('CrowdSale', function(accounts) {
   //TEST GLOBALS
   let crowdsaleInstance;
+  before('Preparation', () =>
+    CrowdSale.deployed().then(instance => crowdsaleInstance = instance)
+  );
 
-  describe('tests', function() {
-    before('Preparation', () =>
-      CrowdSale.deployed().then(instance => crowdsaleInstance = instance)
-    );
+  describe('Prebuying', () => {
     it('accepts a prebuy order', () => {
       // checks that Eth can be received at contract address,
       // and proper number of tokens are preordered for buyer
@@ -26,6 +26,8 @@ contract('CrowdSale', function(accounts) {
       crowdsaleInstance.checkTokenOrder.call({from: accounts[1]})
       .then(orderAmt => assert.equal(orderAmt, 4))
     });
+  });
+  describe('Withdrawal', () => {
     it('does not error on withdrawal from contract', () => {
       var wdrawnWei = web3.toWei(1, 'ether');
       return crowdsaleInstance.withdrawFunding(wdrawnWei, {from: accounts[1]})
@@ -44,14 +46,16 @@ contract('CrowdSale', function(accounts) {
       return crowdsaleInstance.checkTokenOrder.call({from: accounts[1]})
       .then(orderAmt => assert.equal(orderAmt, 2));
     });
-    it('errors on order below limit', () => {
+  });
+  describe('Minimum order/withdrawal', () => {
+    it('errors on order below minimum', () => {
       var underLimitWei = web3.toWei(0.9999999, 'ether');  // min is 1 Ether
       return extensions.assertThrows(crowdsaleInstance.prebuyTokens,
         [{value: underLimitWei, from: accounts[2]}],
         'No error thrown, or incorrect error thrown.'
       );
     });
-    it('does not increase order when below limit', () => {
+    it('does not increase order when below minimum', () => {
       return crowdsaleInstance.checkTokenOrder.call({from: accounts[2]})
       .then(orderAmt => assert.equal(orderAmt, 0));
     });
@@ -76,6 +80,8 @@ contract('CrowdSale', function(accounts) {
           crowdsaleInstance.checkTokenOrder.call({from: accounts[1]})
         )
     });
+  });
+  describe('Transition into payout phase', () => {
     it('should error on initiatePayout call before sale end', () => {
       return extensions.assertThrows(
         crowdsaleInstance.initiatePayout, [], 'No/incorrect error thrown'
@@ -99,6 +105,8 @@ contract('CrowdSale', function(accounts) {
         )
       )
     })
+  });
+  describe('Payout state and phase transitions', () => {
     it('transitions into next state on initiatePayout call', () => {
       return crowdsaleInstance.state.call()
       .then(res => assert.equal(res, 1))
