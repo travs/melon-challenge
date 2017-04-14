@@ -1,8 +1,7 @@
-const TestRPC = require('ethereumjs-testrpc');
-const rpc = require('../utils/rpc-helper.js');
-const extensions = require('../utils/test-extensions.js');
-const logging = require('../utils/contract-logger.js');
-const sim = require('../utils/simulation-utils.js');
+const utils = require('contract-utils');
+const rpc = utils.rpc;
+const extensions = utils.testing;
+const logging = utils.logger;
 const CrowdSale = artifacts.require('./CrowdSale.sol');
 
 require('./crowdsale-unit-tests.js'); // this forces unit tests to run first (stackoverflow.com/a/28229621)
