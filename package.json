@@ -1,6 +1,6 @@
 {
   "name": "melon-challenge",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An equitable, timed, fund-and-release offering",
   "main": "truffle.js",
   "directories": {
