@@ -1,17 +1,15 @@
 const utils = require('contract-utils');
 const rpc = utils.rpc;
 const extensions = utils.testing;
-const logging = utils.logger;
+// const logging = utils.logger;
 const CrowdSale = artifacts.require('./CrowdSale.sol');
-
-// LOGGING
-logging.logContract(CrowdSale);
 
 contract('CrowdSale', function(accounts) {
   //TEST GLOBALS
   let crowdsaleInstance;
   before('Preparation', () =>
-    CrowdSale.deployed().then(instance => crowdsaleInstance = instance)
+    CrowdSale.deployed()
+    .then(instance => crowdsaleInstance = instance)
   );
 
   describe('Prebuying', () => {
