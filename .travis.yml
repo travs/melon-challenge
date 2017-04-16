@@ -1,6 +1,7 @@
 language: node_js
 node_js:
   - "6"
+  - "7"
 compiler:
   - gcc
   - clang
@@ -21,4 +22,3 @@ install:
 script:
   - truffle compile
   - truffle test
-

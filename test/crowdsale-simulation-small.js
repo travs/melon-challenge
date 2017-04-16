@@ -6,7 +6,7 @@ const CrowdSale = artifacts.require('./CrowdSale.sol');
 
 require('./crowdsale-unit-tests.js'); // this forces unit tests to run first (stackoverflow.com/a/28229621)
 
-describe.skip('Small Sample Crowdsale', function(){
+describe('Small Sample Crowdsale', function(){
 contract('CrowdSale', function(accounts){
   //DATA
   let prebuys = [
